@@ -1,0 +1,19 @@
+{
+  "name": "@xavisoft/auth",
+  "version": "0.1.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "jsonwebtoken": "^8.5.1",
+    "sequelize": "^6.17.0",
+    "signal-exit": "^3.0.3",
+    "sqlite3": "^5.0.2",
+    "uuid": "^8.3.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Xavier Mukodi",
+  "license": "ISC"
+}
