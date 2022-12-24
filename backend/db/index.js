@@ -55,5 +55,4 @@ const _global = {};
 module.exports = {
 	Token,
 	init,
-	sequelize,
 }
