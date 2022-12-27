@@ -21,11 +21,13 @@ async function refresh(req, res) {
       if (!token)
          return res.status(400).send('Invalid refresh token header');
 
+      const userInfo = JSON.parse(token.user_info);
+
       const new_refresh_token = uuid();
       const access_token = generateAccessToken({ 
          userInfo, 
          secretKey: _global.SECRET_KEY,
-         tokenValidityPeriod: _global.ACC
+         tokenValidityPeriod: _global.ACCESS_TOKEN_VALIDITY_PERIOD
       })
       
       setAuthHeaders(res, {
