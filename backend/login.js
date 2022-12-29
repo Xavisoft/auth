@@ -29,7 +29,7 @@ async function login(req, res) {
 			access_token
 		});
 		
-		return res.send('OK');
+		return res.send(userInfo);
 
 	} catch (err) {
 		res.sendStatus(500);

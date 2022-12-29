@@ -32,7 +32,7 @@ function _decodeAccessToken(access_token) {
 }
 
 
-async function _refreshAccessToken(waitDurationBeforRetry=5000) {
+async function _refreshAccessToken(waitDurationBeforeRetry=5000) {
 	try {
 		await _global.axios.get(_global.refreshRoute);
 	} catch (err) {
@@ -40,8 +40,8 @@ async function _refreshAccessToken(waitDurationBeforRetry=5000) {
 		console.error(err);
 
 		setTimeout(() => {
-			_refreshAccessToken(2 * waitDurationBeforRetry);
-		}, waitDurationBeforRetry);
+			_refreshAccessToken(2 * waitDurationBeforeRetry);
+		}, waitDurationBeforeRetry);
 	}
 }
 
