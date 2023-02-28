@@ -5,7 +5,7 @@
   "main": "main.js",
   "dependencies": {
     "bcrypt": "^5.0.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "sequelize": "^6.17.0",
     "signal-exit": "^3.0.3",
     "sqlite3": "^5.0.2",
