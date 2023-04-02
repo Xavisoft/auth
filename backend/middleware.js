@@ -33,14 +33,12 @@ async function middleware(req, res, next) {
 
 		if (!access_token) {
 			req.auth = null;
-			console.log('@xavisoft/auth > no auth token');
 			return next();
 		}
 	
 		// check if not revoked
 		if (revokedTokens.has(access_token)) {
-			res.auth = null
-			console.log('@xavisoft/auth > revoked token');
+			res.auth = null;
 			next();
 		}
 
@@ -49,7 +47,6 @@ async function middleware(req, res, next) {
 
 		if (user === null) {
 			req.auth = null;
-			console.log('@xavisoft/auth > no auth token');
 			return next();
 		}
 

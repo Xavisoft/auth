@@ -62,9 +62,6 @@ function setAuthHeaders(config) {
 	config.headers[constants.ACCESS_TOKEN_HEADER_NAME] = tokens.access_token;
 	config.headers[constants.REFRESH_TOKEN_HEADER_NAME] = tokens.refresh_token;
 
-	console.log(config.headers);
-
-
 	return config;
 }
 
