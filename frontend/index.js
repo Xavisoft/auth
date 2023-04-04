@@ -1,20 +1,7 @@
 
-const constants = require('./constants');
+const constants = require('../constants');
+const { readAuthTokensFromLocalStorage, writeAuthTokensToLocalStorage } = require('./utils');
 
-
-
-function writeAuthTokensToLocalStorage(tokens) {
-
-	const existingTokens = readAuthTokensFromLocalStorage();
-	const data = {};
-
-	data.access_token = tokens.access_token || existingTokens.access_token;
-	data.refresh_token = tokens.refresh_token || existingTokens.refresh_token;
-
-	const json = JSON.stringify(data)
-	window.localStorage.setItem(constants.LOCAL_STORAGE_KEY, json);
-
-}
 
 const activityEvents = [
 	'mousemove',
@@ -46,14 +33,7 @@ async function _refreshAccessToken(waitDurationBeforeRetry=5000) {
 }
 
 
-function readAuthTokensFromLocalStorage() {
-	try {
-		const json = window.localStorage.getItem(constants.LOCAL_STORAGE_KEY);
-		return JSON.parse(json) || {};
-	} catch {
-		return {};
-	}
-}
+
 
 function setAuthHeaders(config) {
 

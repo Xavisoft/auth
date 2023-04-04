@@ -1,7 +1,7 @@
 
 'use strict'
-const constants = require('../constants');
 const jwt = require('jsonwebtoken');
+const { ACCESS_TOKEN_HEADER_NAME } = require('../constants');
 
 
 async function getUserInfoByAuthToken(access_token) {
@@ -29,7 +29,7 @@ async function middleware(req, res, next) {
 	try {
 
 		// extract auth token
-		const access_token = req.headers[constants.ACCESS_TOKEN_HEADER_NAME];
+		const access_token = req.headers[ACCESS_TOKEN_HEADER_NAME] || req.query[ACCESS_TOKEN_HEADER_NAME];
 
 		if (!access_token) {
 			req.auth = null;
