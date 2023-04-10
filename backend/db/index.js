@@ -38,8 +38,12 @@ async function init(options) {
 		DB_PATH,
 	} = options;
 
-	const dialect = `sqlite::${DB_PATH}/db.sqlite`;
-	const sequelize = new Sequelize(dialect, { logging: false, dialect: 'sqlite' });
+	const storage = `${DB_PATH}/db.sqlite`;
+	const sequelize = new Sequelize('', '', '', { 
+		dialect: 'sqlite',
+		storage,
+		logging: false
+	});
 
 	Token.init(sequelize, REFRESH_TOKEN_VALIDITY_PERIOD);
 
