@@ -1,6 +1,5 @@
 
 
-const { Token }  = require('./db');
 const { setAuthHeaders } = require('./utils');
 const jwt = require('jsonwebtoken');
 

@@ -1,7 +1,6 @@
+const jwt = require("jsonwebtoken");
 const { REFRESH_TOKEN_HEADER_NAME } = require("../constants");
-const { Token } = require("./db");
-const { v4: uuid } = require('uuid');
-const { setAuthHeaders, generateAccessToken } = require("./utils");
+const { setAuthHeaders, generateToken } = require("./utils");
 
 
 
@@ -13,18 +12,31 @@ async function refresh(req, res) {
 
       const refresh_token = req.headers[REFRESH_TOKEN_HEADER_NAME];
 
-      if (!refresh)
+      if (!refresh_token)
          return res.status(400).send('No refresh token header');
 
-      const token = await Token.findOne({ where: { refresh_token }});
 
-      if (!token)
-         return res.status(400).send('Invalid refresh token header');
+      let userInfo;
 
-      const userInfo = JSON.parse(token.user_info);
+      try {
+         const payload = jwt.verify(refresh_token, _global.SECRET_KEY);
+         
+         if (exp < Date.now())
+			   throw new Error('Expired token')
 
-      const new_refresh_token = uuid();
-      const access_token = generateAccessToken({ 
+         userInfo = payload.user;
+      } catch (err) {
+         return res.status(403).send('Invalid refresh token');
+      }
+
+      const new_refresh_token = generateToken({ 
+			userInfo, 
+			secretKey: _global.SECRET_KEY, 
+			tokenValidityPeriod: _global.REFRESH_TOKEN_VALIDITY_PERIOD,
+			isRefreshToken: true,
+		});
+
+      const access_token = generateToken({ 
          userInfo, 
          secretKey: _global.SECRET_KEY,
          tokenValidityPeriod: _global.ACCESS_TOKEN_VALIDITY_PERIOD
@@ -36,18 +48,6 @@ async function refresh(req, res) {
       });
 
       res.send();
-
-      try {
-         await Token.update({
-            refresh_token: new_refresh_token,
-            expires: Date.now() + _global.REFRESH_TOKEN_VALIDITY_PERIOD
-         }, {
-            where: {
-               refresh_token
-            }
-         });
-      } catch {}
-
    } catch (err) {
       res.sendStatus(500);
       (authenticator.logErr || console.error)(err);

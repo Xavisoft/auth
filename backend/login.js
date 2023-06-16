@@ -1,7 +1,5 @@
 
-const { v4:uuid } = require('uuid');
-const { saveUserInfoInDataStore, setAuthHeaders, generateAccessToken } = require('./utils');
-const jwt = require('jsonwebtoken')
+const { setAuthHeaders, generateToken } = require('./utils');
 
 async function login(req, res) {
 
@@ -15,10 +13,14 @@ async function login(req, res) {
 		if (!userInfo)
 			return res.status(400).send('Invalid credentials.');
 
-		const refresh_token = uuid();
-		await saveUserInfoInDataStore(refresh_token, userInfo);
+		const refresh_token = generateToken({ 
+			userInfo, 
+			secretKey: _global.SECRET_KEY, 
+			tokenValidityPeriod: _global.REFRESH_TOKEN_VALIDITY_PERIOD,
+			isRefreshToken: true,
+		});
 
-		const access_token = generateAccessToken({ 
+		const access_token = generateToken({ 
 			userInfo, 
 			secretKey: _global.SECRET_KEY, 
 			tokenValidityPeriod: _global.ACCESS_TOKEN_VALIDITY_PERIOD

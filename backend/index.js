@@ -1,11 +1,8 @@
 
-
-const { init:initDB } = require('./db');
 const login = require('./login');
 const logout = require('./logout');
 const middleware = require('./middleware');
 const refresh = require('./refresh');
-const { deleteExpiredAuthTokens } = require('./utils');
 
 
 async function init(options) {
@@ -21,7 +18,6 @@ async function init(options) {
 		route="/api/login",
 		authenticator,
 		ACCESS_TOKEN_VALIDITY_PERIOD=30*60*1000,
-		DB_PATH=process.env.PWD,
 		SECRET_KEY
 	} = options;
 
@@ -51,13 +47,8 @@ async function init(options) {
 	app.delete(route, logout({ authenticator, revokedTokens }));
 	app.get(refreshRoute, refresh({ authenticator, REFRESH_TOKEN_VALIDITY_PERIOD, SECRET_KEY, ACCESS_TOKEN_VALIDITY_PERIOD }))
 
-	//initialize database
-	await initDB({ REFRESH_TOKEN_VALIDITY_PERIOD, DB_PATH });
-
 	// mark as initialized
 	_global.initialized = true;
-
-	setInterval(deleteExpiredAuthTokens, REFRESH_TOKEN_VALIDITY_PERIOD);
 
 }
 
