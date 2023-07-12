@@ -6,7 +6,7 @@ npm i @xavisoft/auth --registry=https://verdaccio.xavisoft.co.zw
 ```
 
 ## Overview 
-This package is a JWT based auth middleware for `express` and `axios`. It provides `login` and `refresh` endpoints out of the box. It also automatically sends auth token with each request, and handles all the token decoding for you.
+This package is a JWT based auth middleware for `express` and `axios`. It provides `login` and `refresh` endpoints out of the box. It also automatically sends an *access token* with each request, and handles all the token decoding for you.
 
 ## Usage
 ### Backend
@@ -56,8 +56,8 @@ init({
 #### Authentication and Authorization
 When a user logs in, you should send the credentials via a POST request to the endpoint you provided above.
 
-When subsequent requests are sent after a successful login, they will be accompanied by a *JWT access token* in the headers (provided you set up your front-end).
-All middlewares and routes that comes after the auth middleware will have access to the auth information via `req.auth.user` object. This object will contain the information returned by `authenticator.getUserInfo()`. If `req.auth` is not available, it indicates that either the token is invalid, expired or it wasn't sent at all.
+When subsequent requests are sent after a successful login, they will be accompanied by a *JWT access token* in the headers (provided you set up your front-end, see instuctions [here](#frontend)).
+All middlewares and routes that comes after the auth middleware will have access to the auth information via `req.auth.user` object. This object will contain the information returned by `authenticator.getUserInfo()` during login. If `req.auth` is not available, it indicates that either the token is invalid, expired or it wasn't sent at all.
 
 ```js
 app.get('/user-info', (req, res) => {
@@ -75,7 +75,32 @@ app.get('/user-info', (req, res) => {
 
 ### Frontend
 #### Using axios
-If you are using axios, you can set it up to automatically capture access and refresh tokens, send the access token on each requests, and automatically refreshes the auth token when it
+If you are using axios, you can set it up to automatically capture access and refresh tokens, send the access token on each requests, and automatically refreshes the access token when it is about to expire. It achieves this by using axios *interceptors* internally.
+
+```js
+const axios = require('axios');
+const init = require('@xavisoft/auth/frontend');
+
+const instance = axios.createInstance();
+
+init({
+   axios: instance,
+   refreshRoute // the endpoint to use for refreshing tokens, should match the route endpoint for login set on the backend
+});
+
+```
 #### Using other libraries
+If you are using another HTTP client other than `axios`, you can manually capture and refresh tokens.
 
+##### Capturing tokens
+When you send a request to the login endpoint, if the login is successful, you get the following headers in your response:
+- `openstack-xavisoft-access-token`
+- `openstack-xavisoft-refresh-token`
 
+When you do a refresh you also get the same tokens. You can store these values as you see fit.
+
+#### Sending access token
+To authenticate a request, you need to send the `openstack-xavisoft-access-token` header with each request.
+
+#### Refreshing access token
+To refresh access token, send a `GET` request to the route endpoint. You will get the new refresh and access tokens in the headers.
