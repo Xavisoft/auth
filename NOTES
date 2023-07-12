@@ -1,0 +1,7 @@
+
+
+- remove "revoked tokens" feature
+- refactor global stuff
+- remove logout logic
+- write tests
+- pass logger
