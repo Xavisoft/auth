@@ -4,13 +4,24 @@ const middleware = require('./middleware');
 const refresh = require('./refresh');
 const store = require('./store');
 
-
-
-async function init(options) {
+/**
+ * 
+ * @param {object} options 
+ * @param {import('express').Application | import('express').Router} options.app The app/router to add the middleware and endpoints on
+ * @param {string} options.route Path to add the endpoints
+ * @param {number} options.ACCESS_TOKEN_VALIDITY_PERIOD Access token validity period in milliseconds
+ * @param {number} options.REFRESH_TOKEN_HEADER_NAME Refresh token validity period in milliseconds
+ * @param {object} options.authenticator Object encapsulating logic to verify user credentials
+ * @param {function} options.authenticator.getUserInfo Function to return information used to identify a user based on the passed credentials
+ * @param {object} options.logger Object encapsulating logic to log information
+ * @param {function} options.logger.log Function to log information
+ * @param {function} options.logger.err Function to log errors
+ * @param {string} options.SECRET_KEY JWT secret
+ */
+function init(options) {
 
 	if (store.initialized)
 		return;
-
 
 	const {
 		app,
