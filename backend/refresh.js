@@ -21,6 +21,7 @@ async function refresh(req, res) {
 
       try {
          const payload = jwt.verify(refresh_token, store.SECRET_KEY);
+         const { exp } = payload;
          
          if (exp < Date.now())
 			   throw new Error('Expired token');
@@ -31,6 +32,7 @@ async function refresh(req, res) {
          userInfo = payload.user;
          
       } catch (err) {
+         console.log(err); process.exit();
          return res.status(403).send('Invalid refresh token');
       }
 

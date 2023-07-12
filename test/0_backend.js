@@ -130,7 +130,7 @@ suite("Backend", function () {
    });
 
    // test refreshing token
-   test('Test token decoding', async () => {
+   test('Token refreshing', async () => {
 
       // send request
       const res = await requester
