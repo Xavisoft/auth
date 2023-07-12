@@ -16,7 +16,7 @@ async function getUserInfoByAuthToken(access_token) {
 
 		return user;
 	} catch (err) {
-		console.error(err)
+		store.logger.error(err);
 		return null;
 	}
 
@@ -52,7 +52,7 @@ async function middleware(req, res, next) {
 
 	} catch (err) {
 		res.sendStatus(500);
-		(authenticator.logError || console.log)(err);
+		store.logger.error(err);
 	}
 
 }

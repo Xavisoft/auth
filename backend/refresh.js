@@ -32,7 +32,6 @@ async function refresh(req, res) {
          userInfo = payload.user;
          
       } catch (err) {
-         console.log(err); process.exit();
          return res.status(403).send('Invalid refresh token');
       }
 
@@ -57,7 +56,7 @@ async function refresh(req, res) {
       res.send();
    } catch (err) {
       res.sendStatus(500);
-      (authenticator.logErr || console.error)(err);
+      store.logger.error(err);
    }
 }
 

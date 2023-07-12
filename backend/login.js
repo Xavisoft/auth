@@ -37,7 +37,7 @@ async function login(req, res) {
 
 	} catch (err) {
 		res.sendStatus(500);
-		(authenticator.logError || console.log)(err)
+		store.logger.error(err);
 	}
 }
 

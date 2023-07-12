@@ -27,6 +27,7 @@ function init(options) {
 		app,
 		route="/api/login",
 		authenticator,
+		logger=console,
 		ACCESS_TOKEN_VALIDITY_PERIOD=30*60*1000,
 		SECRET_KEY
 	} = options;
@@ -61,6 +62,7 @@ function init(options) {
 
 	store.authenticator = authenticator;
 	store.initialized = true;
+	store.logger = logger;
 
 }
 
