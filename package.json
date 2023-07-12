@@ -7,7 +7,7 @@
     "jsonwebtoken": "^9.0.0"
   },
   "scripts": {
-    "test": "mocha --ui tdd --exit"
+    "test": "PORT=8081 mocha --ui tdd --exit"
   },
   "author": "Xavier Mukodi",
   "license": "ISC",

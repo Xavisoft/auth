@@ -18,6 +18,7 @@ You first need to create an `authenticator` object, as show below:
 // and verify them
 // if correct it should return the user information
 // the developer wants store in the token
+// otherwise it should returns null
 // e.g user id, priviledges, e.t.c
 // if you want to do asyncronous operations in this function
 // you can make it return a promise (or just make it "async")
