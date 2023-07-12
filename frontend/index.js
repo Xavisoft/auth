@@ -93,7 +93,7 @@ function init(options) {
 
 	const {
 		axios,
-		refreshRoute='/api/login/refresh'
+		refreshRoute='/api/login'
 	} = options;
 
 	_global.axios = axios;
