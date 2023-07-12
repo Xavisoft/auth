@@ -1,15 +1,14 @@
 
 const login = require('./login');
-const logout = require('./logout');
 const middleware = require('./middleware');
 const refresh = require('./refresh');
+const store = require('./store');
+
 
 
 async function init(options) {
 
-
-
-	if (_global.initialized)
+	if (store.initialized)
 		return;
 
 
@@ -36,28 +35,23 @@ async function init(options) {
 		throw new Error("authenticator is required.");
 
 	// store the authenticator
-	_global.authenticator = authenticator;
+	store.authenticator = authenticator;
 
 	// attach middleware and routes
-	const refreshRoute = `${route}/refresh`;
-	const revokedTokens = new Set();
 
-	app.use(middleware({ authenticator, SECRET_KEY, revokedTokens }));
-	app.post(route, login({ authenticator, SECRET_KEY, ACCESS_TOKEN_VALIDITY_PERIOD }));
-	app.delete(route, logout({ authenticator, revokedTokens }));
-	app.get(refreshRoute, refresh({ authenticator, REFRESH_TOKEN_VALIDITY_PERIOD, SECRET_KEY, ACCESS_TOKEN_VALIDITY_PERIOD }))
+	app.use(middleware);
+	app.post(route, login);
+	app.get(route, refresh)
 
-	// mark as initialized
-	_global.initialized = true;
+	// add data to store
+	store.ACCESS_TOKEN_VALIDITY_PERIOD = ACCESS_TOKEN_VALIDITY_PERIOD;
+	store.REFRESH_TOKEN_VALIDITY_PERIOD = REFRESH_TOKEN_VALIDITY_PERIOD;
+	store.SECRET_KEY = SECRET_KEY;
+
+	store.authenticator = authenticator;
+	store.initialized = true;
 
 }
-
-
-const _global = {
-	initialized: false
-};
-
-
 
 module.exports = {
 	init

@@ -1,9 +1,11 @@
 
+const store = require('./store');
 const { setAuthHeaders, generateToken } = require('./utils');
+
 
 async function login(req, res) {
 
-	const { authenticator } = _global;
+	const { authenticator } = store;
 	
 	try {
 
@@ -15,15 +17,15 @@ async function login(req, res) {
 
 		const refresh_token = generateToken({ 
 			userInfo, 
-			secretKey: _global.SECRET_KEY, 
-			tokenValidityPeriod: _global.REFRESH_TOKEN_VALIDITY_PERIOD,
+			secretKey: store.SECRET_KEY, 
+			tokenValidityPeriod: store.REFRESH_TOKEN_VALIDITY_PERIOD,
 			isRefreshToken: true,
 		});
 
 		const access_token = generateToken({ 
 			userInfo, 
-			secretKey: _global.SECRET_KEY, 
-			tokenValidityPeriod: _global.ACCESS_TOKEN_VALIDITY_PERIOD
+			secretKey: store.SECRET_KEY, 
+			tokenValidityPeriod: store.ACCESS_TOKEN_VALIDITY_PERIOD
 		});
 
 		setAuthHeaders(res, {
@@ -41,13 +43,5 @@ async function login(req, res) {
 
 
 
-const _global = {};
-
-module.exports = function({ authenticator, ACCESS_TOKEN_VALIDITY_PERIOD, SECRET_KEY }) {
-	_global.authenticator = authenticator;
-	_global.ACCESS_TOKEN_VALIDITY_PERIOD = ACCESS_TOKEN_VALIDITY_PERIOD;
-	_global.SECRET_KEY = SECRET_KEY
-	return login;
-}
-
+module.exports = login
 
