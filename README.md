@@ -82,7 +82,7 @@ If you are using axios, you can set it up to automatically capture access and re
 const axios = require('axios');
 const init = require('@xavisoft/auth/frontend');
 
-const instance = axios.createInstance();
+const instance = axios.create();
 
 init({
    axios: instance,
