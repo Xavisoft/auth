@@ -1,10 +1,7 @@
 
 const atob = require('atob');
+const { EventEmitter } = require('events');
 
-
-function addEventListener() {
-
-}
 
 
 const localStorage = {
@@ -21,10 +18,14 @@ const localStorage = {
 }
 
 
-const window = {
-   addEventListener,
-   atob,
-   localStorage,
+class Window extends EventEmitter {
 }
+
+Window.prototype.addEventListener = Window.prototype.on;
+Window.prototype.atob = atob;
+Window.prototype.localStorage = localStorage;
+
+
+const window = new Window(); 
 
 module.exports = window;

@@ -9,6 +9,32 @@ const constants = require('../constants');
 const jwt = require('jsonwebtoken');
 const window = require('./window');
 
+// helper functions
+function delay(millis) {
+   return new Promise(resolve => setTimeout(resolve, millis));
+}
+
+function createAuthInitialiazedAxiosInstance() {
+
+   const axios = require('axios').default.create();
+
+   global.window = window;
+
+   initFrontend({
+      axios,
+   });
+
+   axios.interceptors.request.use(config => {
+
+      if (typeof config.url === 'string' && config.url.indexOf("/") === 0)
+         config.url = `http://localhost:${PORT}${config.url}`;
+
+      return config;
+
+   });
+
+   return axios;
+}
 
 // create backend
 /// user
@@ -42,12 +68,14 @@ app.use(express.json());
 
 const ROUTE = '/api/login';
 const SECRET_KEY = casual.uuid;
+const ACCESS_TOKEN_VALIDITY_PERIOD = 1000;
 
 initBackend({
    app,
    route: ROUTE,
    authenticator,
    SECRET_KEY,
+   ACCESS_TOKEN_VALIDITY_PERIOD,
 });
 
 app.get('/api/user-info', (req, res) => {
@@ -73,7 +101,6 @@ const { assert } = chai;
 
 
 suite("Backend", function () {
-
 
    let accessToken, refreshToken;
 
@@ -159,17 +186,34 @@ suite("Backend", function () {
 
 suite("Frontend", function() {
 
-   const axios = require('axios').create();
+   const axios = createAuthInitialiazedAxiosInstance();
 
-   this.beforeAll(async () => {
+   // making sure that the library
+   // will refresh access token when it is about to expire
+   setInterval(() => {
+      window.emit('scroll');
+   }, 100);
 
-      global.window = window;
+   // add refresh verification interceptor
+   let refreshTokenWasSent = false;
+   let accessTokenWasRefreshed = false;
 
-      initFrontend({
-         axios,
-      });
+   axios.interceptors.response.use(res => {
+
+      const { config } = res;
+
+      if (config.method.toUpperCase() === 'GET' && config.url.indexOf('/api/login') >= 0) {
+
+         accessTokenWasRefreshed = true;
+
+         if (config.headers && config.headers[constants.REFRESH_TOKEN_HEADER_NAME])
+            refreshTokenWasSent = true;
+      }
+
+      return res;
 
    });
+
 
    test("Should save tokens when received via headers", async () => {
 
@@ -177,7 +221,7 @@ suite("Frontend", function() {
       const { email, password } = user;
       const payload = { email, password };
       
-      const res = await axios.post('http://localhost:8081/api/login', payload);
+      await axios.post('/api/login', payload);
 
       // check localStorage
       const json = window.localStorage.getItem(constants.LOCAL_STORAGE_KEY);
@@ -202,14 +246,26 @@ suite("Frontend", function() {
          else
             accessTokenWasSent = false;
 
-         return config;
+         return res;
+
       });
 
       // request
-      await axios.get('http://localhost:8081/api/user-info');
+      await axios.get('/api/user-info');
 
       // check if access token was sent
       assert.isTrue(accessTokenWasSent);
 
    });
+
+   test("Should refresh access when about to expire", async () => {
+
+      await delay(1000);
+
+      assert.isTrue(accessTokenWasRefreshed);
+      assert.isTrue(refreshTokenWasSent);
+
+   });
+
+   
 })

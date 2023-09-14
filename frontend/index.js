@@ -21,7 +21,15 @@ function _decodeAccessToken(access_token) {
 
 async function _refreshAccessToken(waitDurationBeforeRetry=5000) {
 	try {
-		await _global.axios.get(_global.refreshRoute);
+
+		const tokens = readAuthTokensFromLocalStorage();
+		const { refresh_token } = tokens;
+
+		await _global.axios.get(_global.refreshRoute, {
+			headers: {
+				[constants.REFRESH_TOKEN_HEADER_NAME]: refresh_token,
+			}
+		});
 	} catch (err) {
 
 		console.error(err);
@@ -38,9 +46,7 @@ async function _refreshAccessToken(waitDurationBeforeRetry=5000) {
 function setAuthHeaders(config) {
 
 	const tokens = readAuthTokensFromLocalStorage();
-
 	config.headers[constants.ACCESS_TOKEN_HEADER_NAME] = tokens.access_token;
-	config.headers[constants.REFRESH_TOKEN_HEADER_NAME] = tokens.refresh_token;
 
 	return config;
 }
@@ -48,28 +54,32 @@ function setAuthHeaders(config) {
 
 function storeAuthTokenHeaderFromResponse(response) {
 
-
 	const access_token = response.headers[constants.ACCESS_TOKEN_HEADER_NAME];
 	const refresh_token = response.headers[constants.REFRESH_TOKEN_HEADER_NAME]
 
 	if (access_token || refresh_token) {
+
 		writeAuthTokensToLocalStorage({ access_token, refresh_token});
 
 		if (access_token) {
+
 			try {
 				const decoded = _decodeAccessToken(access_token);
-				const expiresIn = decoded.exp - Date.now();
+				const expiresIn = 0.8 * (decoded.exp - Date.now());
 
 				setTimeout(() => {
 					// check last active
 					const lastActiveThreshold = Date.now() - expiresIn / 2;
 
-					if (_global.lastActive < lastActiveThreshold)
+					if (lastActiveThreshold > _global.lastActive)
 						return;
 
 					_refreshAccessToken();
 
 				}, expiresIn);
+
+				setLastActive();
+
 			} catch (err) {
 				console.error(err);
 			}
