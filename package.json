@@ -1,6 +1,6 @@
 {
   "name": "@xavisoft/auth",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "",
   "dependencies": {
     "jsonwebtoken": "^9.0.0"
