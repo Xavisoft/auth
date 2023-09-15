@@ -13,12 +13,12 @@ function setAuthHeaders(res, tokens) {
 
 function generateToken({ userInfo, secretKey, tokenValidityPeriod, isRefreshToken }) {
 
-	const exp = Date.now() + tokenValidityPeriod
-		
 	const payload = {
-		user: userInfo,
-		exp
+		user: userInfo
 	}
+
+	if (tokenValidityPeriod)
+		payload.exp = Date.now() + tokenValidityPeriod;
 
 	if (isRefreshToken)
 		payload.isRefreshToken = true;

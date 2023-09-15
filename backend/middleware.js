@@ -25,8 +25,6 @@ async function getUserInfoByAuthToken(access_token) {
 
 async function middleware(req, res, next) {
 
-	const { authenticator } = store;
-
 	try {
 
 		// extract auth token

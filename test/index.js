@@ -1,13 +1,13 @@
 
 const chai = require('chai');
-const express = require('express');
 const chaiHttp = require('chai-http');
-const casual = require('casual');
-const { init: initBackend } = require('../backend');
 const initFrontend = require('../frontend');
 const constants = require('../constants');
 const jwt = require('jsonwebtoken');
 const window = require('./window');
+const { createExpressServer, createUser, findFreeport } = require('./utils');
+const child_process = require('child_process');
+
 
 // helper functions
 function delay(millis) {
@@ -36,66 +36,30 @@ function createAuthInitialiazedAxiosInstance() {
    return axios;
 }
 
-// create backend
-/// user
-const user = {
-   id: casual.integer(1, 100),
-   name: casual.name,
-   email: casual.email,
-   password: casual.password,
+function createBackendOnForkProcess(args) {
+
+   const strArgs = Object
+      .keys(args)
+      .map(key => {
+         const value = args[key];
+         return `--${key}=${value}`;
+      })
+      .join(' ');
+
+   const command = `node "${__dirname}/express.js" ${strArgs}`;
+   return child_process.exec(command);
+
 }
 
-/// authenticator
-function getUserInfo(credentials) {
+// constants
+const user = createUser();
 
-   const { email, password } = credentials;
-
-   if (email != user.email || password != user.password)
-      return null;
-
-   return {
-      id: user.id,
-   }
-}
-
-const authenticator = { getUserInfo }
-
-/// create server
-const app = express();
-
-//// middlewares
-app.use(express.json());
-
-const ROUTE = '/api/login';
-const SECRET_KEY = casual.uuid;
-const ACCESS_TOKEN_VALIDITY_PERIOD = 1000;
-
-initBackend({
-   app,
-   route: ROUTE,
-   authenticator,
-   SECRET_KEY,
-   ACCESS_TOKEN_VALIDITY_PERIOD,
-});
-
-app.get('/api/user-info', (req, res) => {
-
-   if (!req.auth)
-      return res.sendStatus(401);
-
-   if (req.auth.user.id !== user.id)
-      return res.sendStatus(403);
-
-   res.send(user);
-
-});
-
-// create HTTP client
 const PORT = process.env.PORT;
+const ROUTE = '/api/login'
+
 
 chai.use(chaiHttp);
 const requester = chai.request(`http://localhost:${PORT}`).keepOpen();
-
 
 const { assert } = chai;
 
@@ -105,8 +69,9 @@ suite("Backend", function () {
    let accessToken, refreshToken;
 
    this.beforeAll(() => {
-      return new Promise((resolve) => {
-         app.listen(PORT, resolve)
+      return createExpressServer({
+         PORT,
+         user,
       });
    });
 
@@ -181,7 +146,52 @@ suite("Backend", function () {
       const decodedAccessToken = jwt.decode(accessToken);
       assert.equal(decodedAccessToken.user.id, user.id);
 
-   })
+   });
+
+   test("Non-expiring refresh token", async () => {
+
+      // create server
+      const { email, password } = user;
+      const port = await findFreeport();
+
+      const cp = createBackendOnForkProcess({
+         port,
+         refreshTokenValidityPeriod: 0,
+         email,
+         password,
+      });
+
+      await delay(1000);
+
+      // login
+      const payload = { email, password };
+
+      let res = await chai
+         .request(`http://localhost:${port}`)
+         .post(ROUTE)
+         .send(payload);
+
+      assert.equal(res.status, 200);
+
+      /// check header
+      const decodedRefreshToken = jwt.decode(res.headers[constants.REFRESH_TOKEN_HEADER_NAME]);
+      assert.isUndefined(decodedRefreshToken.exp);
+
+      // force a refresh
+      let refreshToken = res.headers[constants.REFRESH_TOKEN_HEADER_NAME];
+
+      res = await chai
+         .request(`http://localhost:${port}`)
+         .get(ROUTE)
+         .set(constants.REFRESH_TOKEN_HEADER_NAME, refreshToken)
+         .send();
+
+      assert.equal(res.status, 200);
+
+      // kill server
+      cp.kill();
+      
+   });
 });
 
 suite("Frontend", function() {
