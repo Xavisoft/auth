@@ -24,13 +24,20 @@ function readAuthTokensFromLocalStorage() {
 }
 
 
-function getAuthToken() {
+function getAccessToken() {
    return readAuthTokensFromLocalStorage().access_token || null;
 }
 
+function getRefreshToken() {
+   return readAuthTokensFromLocalStorage().refresh_token || null;
+}
+
+const getAuthToken = getAccessToken;
 
 module.exports = {
+	getAccessToken,
    getAuthToken,
+	getRefreshToken,
    readAuthTokensFromLocalStorage,
    writeAuthTokensToLocalStorage,
 }

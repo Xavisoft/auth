@@ -1,27 +1,9 @@
 
 'use strict'
-const jwt = require('jsonwebtoken');
+
 const { ACCESS_TOKEN_HEADER_NAME } = require('../constants');
 const store = require('./store');
-
-
-async function getUserInfoByAuthToken(access_token) {
-
-	try {
-		const payload = jwt.verify(access_token, store.SECRET_KEY);
-		const { exp, user } = payload;
-
-		if (exp < Date.now())
-			return null;
-
-		return user;
-	} catch (err) {
-		store.logger.error(err);
-		return null;
-	}
-
-}
-
+const { getUserInfoByAuthToken } = require('./utils');
 
 async function middleware(req, res, next) {
 

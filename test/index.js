@@ -7,6 +7,10 @@ const jwt = require('jsonwebtoken');
 const window = require('./window');
 const { createExpressServer, createUser, findFreeport } = require('./utils');
 const child_process = require('child_process');
+const casual = require('casual');
+const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken } = require('../frontend/utils');
+const { generateToken, getUserInfoByAuthToken } = require('../backend/utils');
+const store = require('../backend/store');
 
 
 // helper functions
@@ -274,6 +278,46 @@ suite("Frontend", function() {
 
       assert.isTrue(accessTokenWasRefreshed);
       assert.isTrue(refreshTokenWasSent);
+
+   });
+
+
+   suite("@xavisoft/auth/backend/utils", function () {
+
+      test("getUserInfoByAuthToken() should decode and return user data", () => {
+         
+         const userInfo = {
+            name: casual.word,
+         };
+
+         const secretKey = store.SECRET_KEY;
+         const tokenValidityPeriod = 1000000;
+         const accessToken = generateToken({ userInfo, secretKey, tokenValidityPeriod });
+
+         const decodedUserInfo = getUserInfoByAuthToken(accessToken);
+
+         chai.expect(decodedUserInfo).to.be.deep.equal(userInfo);
+
+      });
+
+   });
+
+   suite("@xavisoft/auth/frontend/utils", function () {
+
+      test("getAccessToken() and getRefreshToken() should return  respective token saved in localStorage", () => {
+
+         const access_token = casual.uuid;
+         const refresh_token = casual.uuid;
+
+         writeAuthTokensToLocalStorage({ refresh_token, access_token });
+
+         const retrievedAccessToken = getAccessToken();
+         const retrievedRefreshToken = getRefreshToken();
+
+         assert.equal(retrievedAccessToken, access_token);
+         assert.equal(retrievedRefreshToken, refresh_token);
+
+      });
 
    });
 
