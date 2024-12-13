@@ -10,7 +10,7 @@ const store = require('./store');
  * @param {import('express').Application | import('express').Router} options.app The app/router to add the middleware and endpoints on
  * @param {string} options.route Path to add the endpoints
  * @param {number} options.ACCESS_TOKEN_VALIDITY_PERIOD Access token validity period in milliseconds
- * @param {number} options.REFRESH_TOKEN_HEADER_NAME Refresh token validity period in milliseconds
+ * @param {number} options.REFRESH_TOKEN_VALIDITY_PERIOD Refresh token validity period in milliseconds
  * @param {object} options.authenticator Object encapsulating logic to verify user credentials
  * @param {function} options.authenticator.getUserInfo Function to return information used to identify a user based on the passed credentials
  * @param {object} options.logger Object encapsulating logic to log information
