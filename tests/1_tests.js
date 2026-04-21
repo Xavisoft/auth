@@ -6,7 +6,7 @@ const constants = require('../constants');
 const jwt = require('jsonwebtoken');
 const { createExpressServer, createUser, findFreeport } = require('./utils');
 const casual = require('casual');
-const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken, isTokenValid, logout } = require('../frontend/utils');
+const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken, isTokenValid, logout, isAuthenticated } = require('../frontend/utils');
 const { generateToken, getUserInfoByAuthToken } = require('../backend/utils');
 const { default: axiosLib } = require('axios');
 const child_process = require('child_process');
@@ -372,6 +372,83 @@ suite("Frontend", function() {
          await logout();
 
          assert.isNull(localStorage.getItem(constants.LOCAL_STORAGE_KEY));
+      });
+
+      suite("isAuthenticated()", async () => {
+         const userInfo = { [casual.word]: casual.word };
+         const secretKey = casual.uuid;
+
+         test("Both tokens valid", async () => {
+            const accessToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 100000,
+               isRefreshToken: false
+            });
+
+            const refreshToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 100000,
+               isRefreshToken: true
+            });
+
+            writeAuthTokensToLocalStorage({
+               access_token: accessToken,
+               refresh_token: refreshToken
+            });
+
+            assert.isTrue(await isAuthenticated());
+         });
+
+         test("Expired tokens", async () => {
+            const accessToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 1,
+               isRefreshToken: false
+            });
+
+            const refreshToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 1,
+               isRefreshToken: true
+            });
+
+            await delay(3);
+
+            writeAuthTokensToLocalStorage({
+               access_token: accessToken,
+               refresh_token: refreshToken
+            });
+
+            assert.isFalse(await isAuthenticated());
+
+         });
+
+         test("Expired access token, valid refresh token", async () => {
+            const accessToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 1,
+               isRefreshToken: false
+            });
+
+            await delay(3);
+
+            const refreshToken = generateToken({
+               userInfo,
+               secretKey,
+               tokenValidityPeriod: 100000,
+               isRefreshToken: true
+            });
+
+            writeAuthTokensToLocalStorage({ access_token: accessToken, refresh_token: refreshToken });
+
+            assert.isTrue(await isAuthenticated());
+         });
+         
       });
 
    });

@@ -85,6 +85,7 @@ app.get('/user-info', (req, res) => {
 #### Using axios
 If you are using axios, you can set it up to automatically capture access and refresh tokens, send the access token on each requests, and automatically refreshes the access token when it expires. It achieves this by using axios *interceptors* internally.
 
+##### Initializing
 ```js
 const axios = require('axios');
 const init = require('@xavisoft/auth/frontend');
@@ -93,10 +94,32 @@ const instance = axios.create();
 
 init({
    axios: instance,
-   refreshRoute // the endpoint to use for refreshing tokens, should match the route endpoint for login set on the backend
+   refreshRoute: 'refresh-endpoint' // the endpoint to use for refreshing tokens, should match the route endpoint for login set on the backend
 });
+```
+
+##### Check if authenticated
+When your app loads, before you ask the user to login, check if the user is authenticated
+
+```js
+const { isAuthenticated } = require('@xavisoft/auth/frontend/utils');
+
+// check if authenticated (i.e. the tokens are not expired)
+const authenticated = await isAuthenticated();
+if (authenticated) {
+   // fetch profile
+   // redirect to dashboard
+}
 
 ```
+
+##### Logout
+```js
+const { logout } = require('@xavisoft/auth/frontend/utils');
+
+await logout();
+```
+
 #### Using other libraries
 If you are using another HTTP client other than `axios`, you can manually capture and refresh tokens.
 

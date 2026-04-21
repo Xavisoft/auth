@@ -75,13 +75,22 @@ async function logout() {
 	localStorage.removeItem(LOCAL_STORAGE_KEY);
 }
 
-const getAuthToken = getAccessToken;
+async function isAuthenticated() {
+	const accessToken = getAccessToken();
+	const refreshToken = getRefreshToken();
+	if (accessToken && isTokenValid(accessToken))
+		return true;
+	if (refreshToken && isTokenValid(refreshToken))
+		return true;
+	return false;
+}
 
 module.exports = {
 	getAccessToken,
-   getAuthToken,
+	getAuthToken: getAccessToken,
 	getRefreshToken,
 	isTokenValid,
+	isAuthenticated,
 	logout,
    readAuthTokensFromLocalStorage,
    writeAuthTokensToLocalStorage,
