@@ -25,14 +25,10 @@ function init(options) {
 		route="/api/login",
 		authenticator,
 		logger=console,
-		accessTokenValidityPeriod=30*60*1000,
+		accessTokenValidityPeriod=30 * 60 * 1000, // 30 minutes
+		refreshTokenValidityPeriod=7 * 24 * 60 * 60 * 1000, // 7 days
 		secretKey
 	} = options;
-
-	const {
-		refreshTokenValidityPeriod=2 * accessTokenValidityPeriod
-	} = options;
-
 
 	if (!secretKey)
 		throw new Error('secretKey is required');

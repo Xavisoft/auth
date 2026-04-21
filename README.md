@@ -26,8 +26,8 @@ You first need to create an `authenticator` object, as show below:
 async function getUserInfo(credentials) {
 	if (/* credentials are correct */) {
       return {
-         tokenPayload: { },
-         user: {  }
+         tokenPayload: { /* user info to encode into the JWT */ },
+         user: { /* user profile to return to the client */ }
       }
    }
 }
@@ -51,9 +51,10 @@ init({
    app,
    route, // endpoint to use for login
    authenticator,
-   accessTokenValidityPeriod, // in milliseconds
-   refreshTokenValidityPeriod, // in milliseconds
+   accessTokenValidityPeriod, // in milliseconds (default: 30 minutes)
+   refreshTokenValidityPeriod, // in milliseconds (default: 7 days)
    secretKey, // the secret key for token signing and verification
+   logger // optional logger for debugging
 })
 
 // other middlewares and routes ...
