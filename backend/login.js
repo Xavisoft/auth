@@ -15,17 +15,19 @@ async function login(req, res) {
 		if (!userInfo)
 			return res.status(400).send('Invalid credentials.');
 
+		const { user, tokenPayload } = userInfo;
+
 		const refresh_token = generateToken({ 
-			userInfo, 
-			secretKey: store.SECRET_KEY, 
-			tokenValidityPeriod: store.REFRESH_TOKEN_VALIDITY_PERIOD,
+			userInfo: tokenPayload, 
+			secretKey: store.secretKey, 
+			tokenValidityPeriod: store.refreshTokenValidityPeriod,
 			isRefreshToken: true,
 		});
 
 		const access_token = generateToken({ 
-			userInfo, 
-			secretKey: store.SECRET_KEY, 
-			tokenValidityPeriod: store.ACCESS_TOKEN_VALIDITY_PERIOD
+			userInfo: tokenPayload,
+			secretKey: store.secretKey, 
+			tokenValidityPeriod: store.accessTokenValidityPeriod
 		});
 
 		setAuthHeaders(res, {
@@ -33,7 +35,7 @@ async function login(req, res) {
 			access_token
 		});
 		
-		return res.send(userInfo);
+		return res.send(user);
 
 	} catch (err) {
 		res.sendStatus(500);

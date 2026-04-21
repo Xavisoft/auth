@@ -4,13 +4,12 @@ const chaiHttp = require('chai-http');
 const initFrontend = require('../frontend');
 const constants = require('../constants');
 const jwt = require('jsonwebtoken');
-const window = require('./window');
 const { createExpressServer, createUser, findFreeport } = require('./utils');
-const child_process = require('child_process');
 const casual = require('casual');
-const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken } = require('../frontend/utils');
+const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken, isTokenValid } = require('../frontend/utils');
 const { generateToken, getUserInfoByAuthToken } = require('../backend/utils');
-const store = require('../backend/store');
+const { default: axiosLib } = require('axios');
+const child_process = require('child_process');
 
 
 // helper functions
@@ -20,28 +19,30 @@ function delay(millis) {
 
 function createAuthInitialiazedAxiosInstance() {
 
-   const axios = require('axios').default.create();
+   global.localStorage = localStorage;
+   const axios = axiosLib.create();
 
-   global.window = window;
-
-   initFrontend({
-      axios,
-   });
+   initFrontend({ axios });
 
    axios.interceptors.request.use(config => {
-
       if (typeof config.url === 'string' && config.url.indexOf("/") === 0)
          config.url = `http://localhost:${PORT}${config.url}`;
-
       return config;
-
    });
 
    return axios;
 }
 
+/**
+ * 
+ * @param {object} args
+ * @param {number} args.refreshTokenValidityPeriod
+ * @param {number} args.port
+ * @param {string} args.email
+ * @param {string} args.password
+ * @returns 
+ */
 function createBackendOnForkProcess(args) {
-
    const strArgs = Object
       .keys(args)
       .map(key => {
@@ -52,35 +53,43 @@ function createBackendOnForkProcess(args) {
 
    const command = `node "${__dirname}/express.js" ${strArgs}`;
    return child_process.exec(command);
-
 }
 
 // constants
-const user = createUser();
-
 const PORT = process.env.PORT;
 const ROUTE = '/api/login'
-
+const user = createUser();
+const secretKey = casual.uuid;
 
 chai.use(chaiHttp);
 const requester = chai.request(`http://localhost:${PORT}`).keepOpen();
 
 const { assert } = chai;
 
+const localStorage = {
 
+   _data: {},
+
+   setItem: function(key, data) {
+      this._data[key] = data;
+   },
+
+   getItem: function(key) {
+      return this._data[key] || null;
+   },
+}
+
+// tests
 suite("Backend", function () {
-
-   let accessToken, refreshToken;
 
    this.beforeAll(() => {
       return createExpressServer({
+         secretKey,
          PORT,
          user,
       });
    });
 
-
-   // test login
    test('Login', async () => {
 
       // send request
@@ -95,10 +104,16 @@ suite("Backend", function () {
 
       assert.equal(res.status, 200);
 
-      // check if token headers are set and 
-      // the information is legit
-      accessToken = res.header[constants.ACCESS_TOKEN_HEADER_NAME];
-      refreshToken = res.header[constants.REFRESH_TOKEN_HEADER_NAME];
+      // check response
+      /// body
+      for (const key in user) {
+         assert.equal(res.body[key], user[key]);
+      }
+
+      /// check if token headers are set and 
+      /// the information is legit
+      const accessToken = res.header[constants.ACCESS_TOKEN_HEADER_NAME];
+      const refreshToken = res.header[constants.REFRESH_TOKEN_HEADER_NAME];
 
       assert.isString(accessToken);
       assert.isString(refreshToken);
@@ -108,10 +123,14 @@ suite("Backend", function () {
 
    });
    
-   // test token decoding
-   test('Token decoding', async () => {
-
+   test('Test auth', async () => {
       // request
+      const accessToken = generateToken({
+         userInfo: { id: user.id },
+         secretKey,
+         tokenValidityPeriod: 1000,
+      });
+
       const res = await requester
          .get('/api/user-info')
          .set(constants.ACCESS_TOKEN_HEADER_NAME, accessToken)
@@ -128,32 +147,41 @@ suite("Backend", function () {
       
    });
 
-   // test refreshing token
    test('Token refreshing', async () => {
-
       // send request
+      const userInfo = { id: casual.integer() };
+
+      const refreshToken = generateToken({
+         userInfo,
+         secretKey,
+         tokenValidityPeriod: 1000,
+         isRefreshToken: true
+      });
+
       const res = await requester
-         .get(ROUTE)
+         .get(`/api/user-info`)
          .set(constants.REFRESH_TOKEN_HEADER_NAME, refreshToken)
          .send();
 
-      assert.equal(res.status, 200);
-
       // check if token headers are set and 
       // the information is legit
-      accessToken = res.header[constants.ACCESS_TOKEN_HEADER_NAME];
-      refreshToken = res.header[constants.REFRESH_TOKEN_HEADER_NAME];
+      const newAccessToken = res.header[constants.ACCESS_TOKEN_HEADER_NAME];
+      const newRefreshToken = res.header[constants.REFRESH_TOKEN_HEADER_NAME];
 
-      assert.isString(accessToken);
-      assert.isString(refreshToken);
+      assert.isString(newAccessToken);
+      assert.isString(newRefreshToken);
 
-      const decodedAccessToken = jwt.decode(accessToken);
-      assert.equal(decodedAccessToken.user.id, user.id);
+      const decodedAccessToken = jwt.decode(newAccessToken);
+      const decodedRefreshToken = jwt.decode(newRefreshToken);
+
+      for (const key in userInfo) {
+         assert.equal(decodedAccessToken.user[key], userInfo[key]);
+         assert.equal(decodedRefreshToken.user[key], userInfo[key]);
+      }
 
    });
 
    test("Non-expiring refresh token", async () => {
-
       // create server
       const { email, password } = user;
       const port = await findFreeport();
@@ -162,10 +190,10 @@ suite("Backend", function () {
          port,
          refreshTokenValidityPeriod: 0,
          email,
-         password,
+         password
       });
 
-      await delay(1000);
+      await delay(500);
 
       // login
       const payload = { email, password };
@@ -181,20 +209,26 @@ suite("Backend", function () {
       const decodedRefreshToken = jwt.decode(res.headers[constants.REFRESH_TOKEN_HEADER_NAME]);
       assert.isUndefined(decodedRefreshToken.exp);
 
-      // force a refresh
-      let refreshToken = res.headers[constants.REFRESH_TOKEN_HEADER_NAME];
-
-      res = await chai
-         .request(`http://localhost:${port}`)
-         .get(ROUTE)
-         .set(constants.REFRESH_TOKEN_HEADER_NAME, refreshToken)
-         .send();
-
-      assert.equal(res.status, 200);
-
       // kill server
       cp.kill();
       
+   });
+
+   suite("utils", function () {
+      test("getUserInfoByAuthToken()", () => {
+         
+         const userInfo = {
+            name: casual.word,
+         };
+
+         const tokenValidityPeriod = 1000000;
+         const accessToken = generateToken({ userInfo, secretKey, tokenValidityPeriod });
+
+         const decodedUserInfo = getUserInfoByAuthToken(accessToken);
+
+         assert.deepEqual(decodedUserInfo, userInfo);
+
+      });
    });
 });
 
@@ -202,35 +236,7 @@ suite("Frontend", function() {
 
    const axios = createAuthInitialiazedAxiosInstance();
 
-   // making sure that the library
-   // will refresh access token when it is about to expire
-   setInterval(() => {
-      window.emit('scroll');
-   }, 100);
-
-   // add refresh verification interceptor
-   let refreshTokenWasSent = false;
-   let accessTokenWasRefreshed = false;
-
-   axios.interceptors.response.use(res => {
-
-      const { config } = res;
-
-      if (config.method.toUpperCase() === 'GET' && config.url.indexOf('/api/login') >= 0) {
-
-         accessTokenWasRefreshed = true;
-
-         if (config.headers && config.headers[constants.REFRESH_TOKEN_HEADER_NAME])
-            refreshTokenWasSent = true;
-      }
-
-      return res;
-
-   });
-
-
    test("Should save tokens when received via headers", async () => {
-
       // request
       const { email, password } = user;
       const payload = { email, password };
@@ -238,7 +244,7 @@ suite("Frontend", function() {
       await axios.post('/api/login', payload);
 
       // check localStorage
-      const json = window.localStorage.getItem(constants.LOCAL_STORAGE_KEY);
+      const json = localStorage.getItem(constants.LOCAL_STORAGE_KEY);
       const authTokens = JSON.parse(json);
 
       assert.isString(authTokens.access_token);
@@ -272,39 +278,43 @@ suite("Frontend", function() {
 
    });
 
-   test("Should refresh access when about to expire", async () => {
+   test("Should sent refreshToken if accessToken has expired", async () => {
+      // prepare
+      const userInfo = { id: user.id }
+      const accessTokenValidityPeriod = 1;
 
-      await delay(1000);
-
-      assert.isTrue(accessTokenWasRefreshed);
-      assert.isTrue(refreshTokenWasSent);
-
-   });
-
-
-   suite("@xavisoft/auth/backend/utils", function () {
-
-      test("getUserInfoByAuthToken() should decode and return user data", () => {
-         
-         const userInfo = {
-            name: casual.word,
-         };
-
-         const secretKey = store.SECRET_KEY;
-         const tokenValidityPeriod = 1000000;
-         const accessToken = generateToken({ userInfo, secretKey, tokenValidityPeriod });
-
-         const decodedUserInfo = getUserInfoByAuthToken(accessToken);
-
-         chai.expect(decodedUserInfo).to.be.deep.equal(userInfo);
-
+      const accessToken = generateToken({
+         userInfo,
+         secretKey,
+         tokenValidityPeriod: accessTokenValidityPeriod,
       });
 
+      const refreshToken = generateToken({
+         userInfo,
+         secretKey,
+         tokenValidityPeriod: 20000,
+         isRefreshToken: true
+      })
+
+      await delay(accessTokenValidityPeriod * 2);
+
+      writeAuthTokensToLocalStorage({
+         access_token: accessToken,
+         refresh_token: refreshToken
+      });
+
+      // send request
+      const res = await axios.get('/api/user-info');
+      assert.equal(res.status, 200);
+
+      // check headers
+      assert.isUndefined(res.config.headers[constants.ACCESS_TOKEN_HEADER_NAME]);
+      assert.equal(res.config.headers[constants.REFRESH_TOKEN_HEADER_NAME], refreshToken);
+
    });
 
-   suite("@xavisoft/auth/frontend/utils", function () {
-
-      test("getAccessToken() and getRefreshToken() should return  respective token saved in localStorage", () => {
+   suite("utils", function () {
+      test("getXxxToken()", () => {
 
          const access_token = casual.uuid;
          const refresh_token = casual.uuid;
@@ -319,7 +329,35 @@ suite("Frontend", function() {
 
       });
 
+      test("isTokenValid()", async () => {
+         // valid token
+         const userInfo = { [casual.word]: casual.word };
+         const secretKey = casual.uuid;
+
+         const validToken = generateToken({
+            userInfo,
+            secretKey,
+            tokenValidityPeriod: 3000,
+            isRefreshToken: casual.coin_flip
+         });
+
+         assert.isTrue(isTokenValid(validToken));
+
+         // expired token
+         const expiredToken = generateToken({
+            userInfo,
+            secretKey,
+            tokenValidityPeriod: 1,
+            isRefreshToken: casual.coin_flip
+         });
+
+         await delay(100);
+
+         assert.isFalse(isTokenValid(expiredToken));
+
+      });
+
    });
 
    
-})
+});

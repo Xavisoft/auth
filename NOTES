@@ -1,7 +1,4 @@
 
 
-- remove "revoked tokens" feature
-- refactor global stuff
-- remove logout logic
-- write tests
-- pass logger
+TODO: Next version should use HttpOnly cookies for refresh tokens. This means that we need to bring back the refresh endpoint, so that we can set the path for the cookies (so that it won't be on every request).
+We should also consider keep the accessToken in memory. Note that this will break the logic of some current apps that used to check the validity without hitting the backend.

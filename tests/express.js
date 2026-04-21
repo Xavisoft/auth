@@ -2,12 +2,7 @@
 const argParser = require('args-parser');
 const { createExpressServer, createUser } = require('./utils');
 
-
-
-
-
 const args = argParser(process.argv);
-
 const { refreshTokenValidityPeriod, port, email, password } = args;
 
 
@@ -20,8 +15,7 @@ if (port) {
 
    createExpressServer({
       user,
-      REFRESH_TOKEN_VALIDITY_PERIOD: refreshTokenValidityPeriod,
+      refreshTokenValidityPeriod,
       PORT: port,
    });
-
 }

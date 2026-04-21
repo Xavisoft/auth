@@ -18,12 +18,18 @@ You first need to create an `authenticator` object, as show below:
 // and verify them
 // if correct it should return the user information
 // the developer wants store in the token
-// otherwise it should returns null
-// e.g user id, priviledges, e.t.c
+// (user id, priviledges, e.t.c) and the profile
+// information (full name, email, etc) to send back to
+// the client, otherwise it should return null
 // if you want to do asyncronous operations in this function
 // you can make it return a promise (or just make it "async")
-function getUserInfo(credentials) {
-
+async function getUserInfo(credentials) {
+	if (/* credentials are correct */) {
+      return {
+         tokenPayload: { },
+         user: {  }
+      }
+   }
 }
 
 const authenticator = {
@@ -43,11 +49,11 @@ const app = express();
 
 init({
    app,
-   route, // endpoint to use for login and refresh
+   route, // endpoint to use for login
    authenticator,
-   ACCESS_TOKEN_VALIDITY_PERIOD, // in milliseconds
-   REFRESH_TOKEN_VALIDITY_PERIOD, // in milliseconds
-   SECRET_KEY, // the secret key for token signing and verification
+   accessTokenValidityPeriod, // in milliseconds
+   refreshTokenValidityPeriod, // in milliseconds
+   secretKey, // the secret key for token signing and verification
 })
 
 // other middlewares and routes ...
@@ -76,7 +82,7 @@ app.get('/user-info', (req, res) => {
 
 ### Frontend
 #### Using axios
-If you are using axios, you can set it up to automatically capture access and refresh tokens, send the access token on each requests, and automatically refreshes the access token when it is about to expire. It achieves this by using axios *interceptors* internally.
+If you are using axios, you can set it up to automatically capture access and refresh tokens, send the access token on each requests, and automatically refreshes the access token when it expires. It achieves this by using axios *interceptors* internally.
 
 ```js
 const axios = require('axios');
@@ -104,4 +110,4 @@ When you do a refresh you also get the same tokens. You can store these values a
 To authenticate a request, you need to send the `openstack-xavisoft-access-token` header with each request.
 
 #### Refreshing access token
-To refresh access token, send a `GET` request to the route endpoint. You will get the new refresh and access tokens in the headers.
+To refresh an access token, send the refresh token on any endpoint, then check the response headers for the new tokens

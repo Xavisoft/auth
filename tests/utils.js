@@ -15,15 +15,13 @@ async function findFreeport(from=8080, end=9000) {
    return 0;
 }
 
-
 function createExpressServer({
-   SECRET_KEY=casual.uuid,
-   ACCESS_TOKEN_VALIDITY_PERIOD=1000,
-   REFRESH_TOKEN_VALIDITY_PERIOD=1000,
+   secretKey=casual.uuid,
+   accessTokenValidityPeriod=1000,
+   refreshTokenValidityPeriod=1000,
    PORT,
    user,
 }) {
-
    /// authenticator
    function getUserInfo(credentials) {
 
@@ -33,7 +31,8 @@ function createExpressServer({
          return null;
 
       return {
-         id: user.id,
+         tokenPayload: { id: user.id },
+         user
       }
    }
 
@@ -48,11 +47,12 @@ function createExpressServer({
    initBackend({
       app,
       authenticator,
-      SECRET_KEY,
-      ACCESS_TOKEN_VALIDITY_PERIOD,
-      REFRESH_TOKEN_VALIDITY_PERIOD,
+      secretKey,
+      accessTokenValidityPeriod,
+      refreshTokenValidityPeriod,
    });
 
+   // routes
    app.get('/api/user-info', (req, res) => {
 
       if (!req.auth)
@@ -65,13 +65,13 @@ function createExpressServer({
 
    });
 
+   // start server and return
    return new Promise(resolve => {
       app.listen(PORT, () => {
          resolve(app);
       });
    })
 }
-
 
 function createUser() {
    return {
@@ -81,7 +81,6 @@ function createUser() {
       password: casual.password,
    }
 }
-
 
 module.exports = {
    createExpressServer,
