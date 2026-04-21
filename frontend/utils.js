@@ -71,6 +71,10 @@ function isTokenValid(token) {
 	return true;
 }
 
+async function logout() {
+	localStorage.removeItem(LOCAL_STORAGE_KEY);
+}
+
 const getAuthToken = getAccessToken;
 
 module.exports = {
@@ -78,6 +82,7 @@ module.exports = {
    getAuthToken,
 	getRefreshToken,
 	isTokenValid,
+	logout,
    readAuthTokensFromLocalStorage,
    writeAuthTokensToLocalStorage,
 }

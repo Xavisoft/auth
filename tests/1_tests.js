@@ -6,7 +6,7 @@ const constants = require('../constants');
 const jwt = require('jsonwebtoken');
 const { createExpressServer, createUser, findFreeport } = require('./utils');
 const casual = require('casual');
-const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken, isTokenValid } = require('../frontend/utils');
+const { writeAuthTokensToLocalStorage, getAccessToken, getRefreshToken, isTokenValid, logout } = require('../frontend/utils');
 const { generateToken, getUserInfoByAuthToken } = require('../backend/utils');
 const { default: axiosLib } = require('axios');
 const child_process = require('child_process');
@@ -77,6 +77,10 @@ const localStorage = {
    getItem: function(key) {
       return this._data[key] || null;
    },
+
+   removeItem(key) {
+      return delete this._data[key];
+   }
 }
 
 // tests
@@ -355,6 +359,19 @@ suite("Frontend", function() {
 
          assert.isFalse(isTokenValid(expiredToken));
 
+      });
+
+      test("logout()", async () => {
+         localStorage.setItem(constants.LOCAL_STORAGE_KEY, JSON.stringify({
+            access_token: "token",
+            refresh_token: "refresh_token"
+         }));
+
+         assert.isNotNull(localStorage.getItem(constants.LOCAL_STORAGE_KEY));
+
+         await logout();
+
+         assert.isNull(localStorage.getItem(constants.LOCAL_STORAGE_KEY));
       });
 
    });
